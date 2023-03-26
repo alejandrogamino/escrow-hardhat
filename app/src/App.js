@@ -3,7 +3,20 @@ import { useEffect, useState } from 'react';
 import deploy from './deploy';
 import Escrow from './Escrow';
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
+// const provider = new ethers.providers.Web3Provider(window.ethereum);
+
+const url = process.env.REACT_APP_GOERLI_URL;
+console.log("url: ", url);
+
+// let artifacts = await hre.artifacts.readArtifact("Faucet");
+const provider = new ethers.providers.JsonRpcProvider(url);
+
+const privateKey = process.env.REACT_APP_PRIVATE_KEY;
+const arbiterPK = process.env.REACT_APP_ARBITER_PK;
+
+const wallet = new ethers.Wallet(privateKey, provider);
+const arbiterWallet = new ethers.Wallet(arbiterPK, provider);
+
 
 export async function approve(escrowContract, signer) {
   const approveTxn = await escrowContract.connect(signer).approve();
@@ -12,19 +25,19 @@ export async function approve(escrowContract, signer) {
 
 function App() {
   const [escrows, setEscrows] = useState([]);
-  const [account, setAccount] = useState();
   const [signer, setSigner] = useState();
+  const [arbiterSigner, setArbiterSigner] = useState();
 
+
+  
   useEffect(() => {
-    async function getAccounts() {
-      const accounts = await provider.send('eth_requestAccounts', []);
-
-      setAccount(accounts[0]);
-      setSigner(provider.getSigner());
+    async function getSigner() {
+      setSigner(wallet);
+      setArbiterSigner(arbiterWallet);
     }
 
-    getAccounts();
-  }, [account]);
+    getSigner();
+  }, [signer, arbiterSigner]);
 
   async function newContract() {
     const beneficiary = document.getElementById('beneficiary').value;
@@ -46,7 +59,7 @@ function App() {
             "✓ It's been approved!";
         });
 
-        await approve(escrowContract, signer);
+        await approve(escrowContract, arbiterSigner);
       },
     };
 
